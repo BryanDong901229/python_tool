@@ -13,8 +13,7 @@ import logging
 import math
 import time
 from dbw_mkz_msgs.msg import *
-#from radar_msgs.msg import *
-from conti_radar_msgs.msg import *
+from radar_msgs.msg import *
 
 logging.basicConfig()
 logger = logging.getLogger()
@@ -24,49 +23,57 @@ class ContiRadar21XXLateralSpeed:
     def __init__(self):
         self.values = []
         self.times = []
-        self.topic = '/conti_bumper_radar/conti_bumper_radar/radar_parsed'
-    def add(self, topic, msg, t):
+        self.topic = '/conti_bumper_radar/conti_bumper_radar/radar_tracks'
+    def add(self, topic, msg, t, object_id):
+        
         if topic == self.topic:
-            #self.values.append(msg.tracks[9].linear_velocity.y * 3.6)
-            self.values.append(msg.tracks[9].lateral_vel * 3.6)
-            self.times.append(t)
+            for objects in msg.tracks:
+                if objects.track_id == int(object_id):
+                    self.values.append(objects.linear_velocity.y * 3.6)
+                    self.times.append(t)
+                    
 
 class ContiRadar21XXLongitudeSpeed:
     def __init__(self):
         self.values = []
         self.times = []
-        self.topic = '/conti_bumper_radar/conti_bumper_radar/radar_parsed'
-    def add(self, topic, msg, t):
+        self.topic = '/conti_bumper_radar/conti_bumper_radar/radar_tracks'
+    def add(self, topic, msg, t, object_id):
         if topic == self.topic:
-            #self.values.append(msg.tracks[9].linear_velocity.x * 3.6)
-            self.values.append(msg.tracks[9].longitude_vel * 3.6)
-            self.times.append(t)
+            for objects in msg.tracks:
+                if objects.track_id == int(object_id):
+                    self.values.append(objects.linear_velocity.x * 3.6)
+                    self.times.append(t)
 
 class ContiRadar21SCLateralSpeed:
     def __init__(self):
         self.values = []
         self.times = []
-        self.topic = '/conti_bumper_radar_21SC/conti_bumper_radar_21SC/radar_parsed'
-    def add(self, topic, msg, t):
+        self.topic = '/conti_bumper_radar_21SC/conti_bumper_radar_21SC/radar_tracks'
+    def add(self, topic, msg, t, object_id):
         if topic == self.topic:
-            #self.values.append(msg.tracks[13].linear_velocity.y * 3.6)
-            self.values.append(msg.tracks[13].lateral_vel * 3.6)
-            self.times.append(t)
+            for objects in msg.tracks:
+                if objects.track_id == int(object_id):
+                    self.values.append(objects.linear_velocity.y * 3.6)
+                    self.times.append(t)
 
 class ContiRadar21SCLongitudeSpeed:
     def __init__(self):
         self.values = []
         self.times = []
-        self.topic = '/conti_bumper_radar_21SC/conti_bumper_radar_21SC/radar_parsed'
-    def add(self, topic, msg, t):
+        self.topic = '/conti_bumper_radar_21SC/conti_bumper_radar_21SC/radar_tracks'
+    def add(self, topic, msg, t, object_id):
         if topic == self.topic:
-            #self.values.append(msg.tracks[13].linear_velocity.x * 3.6)
-            self.values.append(msg.tracks[13].longitude_vel * 3.6)
-            self.times.append(t)
+            for objects in msg.tracks:
+                if objects.track_id == int(object_id):
+                    self.values.append(objects.linear_velocity.x * 3.6)
+                    self.times.append(t)
 
 class RadarReader:
     def __init__(self, args):
         self.bag_file = args.bag_file
+        self.id_21XX = args.id_21XX
+        self.id_21SC = args.id_21SC
         self.start_time_sec = None
         self.graph_data = [ ContiRadar21XXLateralSpeed(),
                             ContiRadar21XXLongitudeSpeed(),
@@ -83,8 +90,13 @@ class RadarReader:
             self.last_time_sec = t.to_sec()
             if self.start_time_sec is None:
                 self.start_time_sec = t.to_sec()
+            if topic =='/conti_bumper_radar/conti_bumper_radar/radar_tracks':
+                track_id = self.id_21XX
+            else:
+                track_id = self.id_21SC
             for data in self.graph_data:
-                data.add(topic, msg, t.to_sec() - self.start_time_sec)
+                data.add(topic, msg, t.to_sec() - self.start_time_sec, track_id)
+                
         self.graph()
 
     def graph(self):
@@ -146,5 +158,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="plot radar speed metrics")
     parser.add_argument('--bag_file', help='bagfile to read')
+    parser.add_argument('--id_21XX', help='target id for Conti Radar 21XX')
+    parser.add_argument('--id_21SC', help='Conti Radar 21SC')
     args = parser.parse_args()
     main(args)
